@@ -9,3 +9,6 @@ bool init_network_interface(void) {
     // 골격만 존재, 아직 로직 없음
     return false; 
 }
+
+
+
