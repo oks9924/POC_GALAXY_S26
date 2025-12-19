@@ -12,7 +12,7 @@ pipeline {
             steps {
                 // Python 테스트 실행
                 // 윈도우 서버라면 'sh' 대신 'bat'를 사용하세요.
-                bat 'python3 test_hello.py'
+                bat 'python test_hello.py'
             }
         }
         stage('Deploy') {
