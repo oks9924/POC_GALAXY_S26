@@ -4,40 +4,44 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // GitHub에서 최신 코드를 가져옵니다.
                 checkout scm
             }
         }
 
         stage('Test') {
             steps {
-                // 파이썬 테스트 실행 (윈도우 환경에 맞춰 python 사용)
-                // 여기서 실패(Exit Code 1)하면 Deploy 단계는 자동으로 건너뜁니다.
+                // 테스트 통과 여부 확인
                 bat 'python test_hello.py'
+            }
+        }
+
+        stage('Build EXE') {
+            steps {
+                echo '🛠️ 파이썬 파일을 EXE로 빌드 중...'
+                // --onefile: 여러 파일을 하나의 exe로 합침
+                // --noconsole: 실행 시 검은색 콘솔창이 뜨지 않게 함 (필요 시 추가)
+                bat 'pyinstaller --onefile hello.py'
             }
         }
 
         stage('Deploy') {
             steps {
-                // Test 단계가 성공했을 때만 이 메시지가 출력됩니다.
-                echo '✅ 테스트 성공! 배포를 시작합니다.'
-                
-                // 간단한 배포 시뮬레이션: 별도의 폴더를 만들고 파일을 복사합니다.
+                echo '✅ 빌드 완료! 결과물을 정리합니다.'
+                // 빌드된 exe 파일만 따로 모아두기
                 bat 'if not exist deploy_dist mkdir deploy_dist'
-                bat 'copy hello.py deploy_dist\\'
-                
-                echo '🚀 배포 폴더(deploy_dist)로 파일 복사가 완료되었습니다.'
+                bat 'copy dist\\hello.exe deploy_dist\\'
             }
         }
     }
 
-    // 모든 단계가 끝난 후 실행되는 결과 처리 블록
     post {
         success {
-            echo '🎉 축하합니다! 모든 빌드와 테스트, 배포가 성공적으로 완료되었습니다.'
+            echo '🎉 빌드 성공!'
+            // 젠킨스 메인 화면에서 exe 파일을 바로 다운로드할 수 있게 보관합니다.
+            archiveArtifacts artifacts: 'dist/*.exe', followSymlinks: false
         }
         failure {
-            echo '❌ 빌드 또는 테스트 중에 문제가 발생했습니다. 로그를 확인해 주세요.'
+            echo '❌ 빌드 실패'
         }
     }
 }
