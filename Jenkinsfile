@@ -1,20 +1,30 @@
-stage('Full Test') {
-    steps {
-        // pytest 대신 maven을 사용 (윈도우 환경이므로 bat)
-        bat 'mvn test' 
+pipeline {
+    agent any
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/oks9924/POC_GALAXY_S26.git'
+            }
+        }
+        stage('Test') {
+            steps {
+                // Java 프로젝트라면 mvn test가 맞습니다!
+                bat 'mvn test' 
+            }
+        }
     }
-}
-post {
-    always {
-        // Maven의 기본 결과 경로를 지정
-        junit '**/target/surefire-reports/*.xml'
-        
-        // Polarion 전송 시에도 실제 생성된 경로를 지정
-        polarionReporter(
-            targetProject: 'POC_GALAXY_S26',
-            testRunTitle: "Full Test Result for Release ${params.RELEASE_ID}",
-            testRunID: "TR_${params.RELEASE_ID}_${BUILD_NUMBER}",
-            junitPath: 'target/surefire-reports/TEST-testapp.junit.AppTest.xml' // 또는 *.xml
-        )
+    post {
+        always {
+            // 1. Jenkins 내부에 리포트 표시
+            junit 'target/surefire-reports/*.xml'
+            
+            // 2. Polarion으로 전송 (경로와 프로젝트 ID 주의)
+            polarionReporter(
+                targetProject: 'POC_GALAXY_S26', 
+                testRunTitle: "Build_${env.BUILD_NUMBER}",
+                testRunID: "TR_${env.BUILD_NUMBER}",
+                junitPath: 'target/surefire-reports/*.xml' // 패턴으로 지정 가능
+            )
+        }
     }
 }
