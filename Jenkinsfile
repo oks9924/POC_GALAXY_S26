@@ -1,51 +1,42 @@
 pipeline {
     agent any
-
+    parameters {
+        string(name: 'RELEASE_ID', defaultValue: '', description: 'Polarion Release WI ID')
+    }
     stages {
-        stage('Checkout') {
+        stage('Checkout Main Branch') {
             steps {
-                echo '📦 GitHub에서 최신 코드를 가져오는 중...'
-                checkout scm
+                // 특정 커밋이 아닌, 항상 최신 Main 브랜치를 가져옵니다.
+                git branch: 'main', url: 'https://github.com/oks9924/POC_GALAXY_S26.git'
             }
         }
-
-        stage('Test') {
+        stage('Full Test') {
             steps {
-                echo '🧪 파이썬 단위 테스트 실행 중...'
-                // 윈도우 환경에 맞춰 'python' 명령어를 사용합니다.
-                // 테스트 실패 시 여기서 중단되며, 이후 단계는 실행되지 않습니다.
-                bat 'python test_hello.py'
+                // 전체 소스 코드에 대해 테스트 수행
+                bat 'pytest --junitxml=result.xml'
             }
         }
-
-        stage('Build EXE') {
-            steps {
-                echo '🛠️ PyInstaller를 사용하여 EXE 파일 빌드 중...'
-                // --onefile: 실행에 필요한 모든 파일을 하나로 합친 단일 EXE 생성
-                bat 'pyinstaller --onefile hello.py'
-            }
-        }
-
         stage('Deploy') {
             steps {
-                echo '🚀 빌드된 파일을 배포용 폴더(deploy_dist)로 정리 중...'
-                // 빌드 결과물인 dist 폴더 내 exe 파일을 별도의 배포 폴더로 복사
-                bat 'if not exist deploy_dist mkdir deploy_dist'
-                bat 'copy dist\\hello.exe deploy_dist\\'
+                // 테스트 성공 시 배포 로직 실행
+                echo "Deploying Release ${params.RELEASE_ID}..."
+                bat 'call scripts/deploy.bat'
             }
         }
     }
-
-    // 모든 단계가 끝난 후 상태에 따라 실행되는 블록
     post {
-        success {
-            echo '🎉 모든 과정이 성공적으로 끝났습니다!'
-            // [중요] 빌드된 EXE 파일을 젠킨스 화면에 보관하여 노출합니다.
-            // 성공 시 Stage View 위쪽이나 대시보드에서 파일을 바로 다운로드할 수 있습니다.
-            archiveArtifacts artifacts: 'dist/*.exe', followSymlinks: false
-        }
-        failure {
-            echo '❌ 빌드 또는 테스트 중에 에러가 발생했습니다. Console Output을 확인해 주세요.'
+        always {
+            // 결과를 폴라리온의 Test Run에 등록
+            junit 'result.xml'
+            archiveArtifacts artifacts: 'result.xml'
+            
+            // Polarion 플러그인을 통한 결과 전송
+            polarionReporter(
+                targetProject: 'POC_GALAXY_S26',
+                testRunTitle: "Full Test Result for Release ${params.RELEASE_ID}",
+                testRunID: "TR_${params.RELEASE_ID}_${BUILD_NUMBER}",
+                junitPath: 'result.xml'
+            )
         }
     }
 }
