@@ -59,4 +59,28 @@ public class AppTest extends TestCase {
     public void testFailure() {
         assertTrue(a - c == 11);
     }
+     /** {@wi.implements POCG/POCG-1319} */
+    public void testApp1() {
+        assertTrue(true);
+    }
+
+    /** {@wi.implements POCG/POCG-1320} */
+    public void testAdd1() {
+        assertTrue(a + b == 2);
+    }
+
+    /** {@wi.implements POCG/POCG-1321} */
+    public void testSubtract1() {
+        assertTrue(a - b == 0);
+    }
+
+    /** {@wi.implements POCG/POCG-1323} */
+    public void testMultiply1() {
+        assertTrue(a * b == 1);
+    }
+
+    /** {@wi.implements POCG/POCG-1324} */
+    public void testDivide1() {
+        assertTrue(a / b == 1);
+    }
 }
